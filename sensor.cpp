@@ -13,31 +13,17 @@
  *    - A Pololu currect sensor breakout (ACS7xx type hall effect sensor) with
  *      sensor output connected to an analog input.
  *   
- *   For the voltage divider, a good starting point is to use a 4k7 resistor for
- *   R2 (GND to divider center) to limit the max input voltage to the Arduino to
- *   5V. This then gives an optimal current of 5V/4k7 = 1.064mA at max monitor
- *   voltage. Solving for R1 is then MaxV/1.064mA - then select the closest
- *   available resitor value for R1 and make sure the max output voltage at max
- *   monitor voltage is still less than 5V.
- *
- *                
  * @param pinV The analog pin connected to the sensor voltage divider.
  * @param pinI The analog pin connected to the current sensor VIOUT pin.
- * @param maxV The maximum total voltage expected across the voltage divider.
- *             This is the total voltage to be measured, and is also the voltage
- *             used to calculate the correct rsistors for the voltage divider.
- * @param mV_A The milliVolt per Amp outpur from the current sensor. Note that
- *             the value is in milliVolt!
  * @param reaRate How often we need to take a sensor reading for both voltage
  *                and current. THis is in millis.
  * @param id The sensor id.
  */
-PSensor::PSensor(uint8_t pinV, uint8_t pinI, uint8_t maxV, uint8_t mV_A,
-				 uint16_t r1, uint16_t r2, uint32_t readRate, char id,
-				int16_t calI, int16_t calV) : TimedTask(millis()),
+PSensor::PSensor(uint8_t pinV, uint8_t pinI, uint8_t mV_A, uint16_t r1,
+				 uint16_t r2, uint32_t readRate, char id, int16_t calI,
+				 int16_t calV) : TimedTask(millis()),
  _pinV(pinV),
  _pinI(pinI),
- _maxV(maxV),
  _mV_A(mV_A),
  _r1(r1),
  _r2(r2),
@@ -68,7 +54,7 @@ void PSensor::run(uint32_t now) {
 	_IpinVal = analogRead(_pinI);
 	
 	#ifdef DEBUG
-	Serial << "[" << _id << "] : V pin: " << _VpinVal << "  V cal: " << _calV;
+	Serial << "[" << _id << "] : Vcc: " << _Vcc << "V pin: " << _VpinVal << "  V cal: " << _calV;
 	Serial << " - I pin: " << _IpinVal << "  I cal: " << _calI << endl;
 	#endif
 
@@ -95,54 +81,53 @@ int16_t PSensor::current() {
 	//
 	//   zeroComp += _calI
 	//
-	// Now we need to convert this value to volts, which means multiplying by
-	// 5V/1024steps. But since the sensor sesitivity is in milliVolt per amp, we
-	// need to convert to milivolts:
-	//             zeroComp * 5 * 1000     (_IpinVal - 512) * 5000
-	//   mVSense = -------------------  =  --------------------
-	//                    1024                     1024
+	// Now we need to convert this value to a voltage, which means multiplying
+	// by Vcc/1024steps. The true Vcc upon which the ADC relies for it's
+	// measurements is available in _Vcc, and this _Vcc is in milivolts:
+	//             zeroComp * Vcc
+	//   mVSense = --------------
+	//                 1023
 	//
 	// Now to get the actual current we divide by the sensor milliVolts/Amp
 	// sensitivity value (or multiply by it's resiprocal)
 	//
-	//                     1         (_IpinVal - 512) * 5000
-	//   Si = mVSense * --------  =  --------------------
-	//                   _mV_A          1024 * _mV_A
+	//                     1
+	//   Si = mVSense * --------
+	//                   _mV_A
 	//
-	// By removing a common factor of 8 top and bottom we get:
+	// By combining the two formulas we get:
 	//
-	//         (_IpinVal - 512) * 625
-	//   Si =  -------------------
-	//             128 * _mV_A
+	//        (_IpinVal - 512 + _calI) * Vcc
+	//   Si = ------------------------------
+	//               1023 * _mV_A
 	//
 	// But we need the current in milliAmps, so we multiply by 1000:
 	//
-	//         (_IpinVal - 512) * 625000
-	//   mA =  ----------------------
-	//              128 * _mV_A
+	//         (_IpinVal - 512 + _calI) * Vcc * 1000
+	//   mA =  -------------------------------------
+	//                     1023 * _mV_A
 	//
-	return (int16_t)((((int32_t)_IpinVal - 512 + _calI) * 625000) / (int32_t)(128 * _mV_A));
+	
+	return (((int32_t)_IpinVal - 512 + _calI) * (int32_t)_Vcc * 1000) / ((int32_t)1023 * _mV_A);
 }
 
 /**
  * Calculate voltage from the voltage divider based on pin reading and calibration.
  **/
 int16_t PSensor::voltage() {
-	// The voltage is calculated based on the true arduino Vcc at this instant and
-	// the resistors used for the voltage divider:
+	// The voltage is calculated based on the true arduino Vcc at the instant
+	// the analog input was read and the resistors used for the voltage divider:
 	//
-	//       _VpinVal x Vcc x (R1 + R2)
-	// Vin = --------------------------
-	//            1023    x      R2
+	//       (_VpinVal + _calV) x Vcc x (R1 + R2)
+	// Vin = ------------------------------------
+	//                  1023    x      R2
 	//       
 	// The Vcc value is calculated in mV and the returned voltage is also in mV, the
 	// value can become quite large and has the potential of rolling over even with
 	// 32bit integers. We compensate for this by dividing top and bottom by 100
 	// before doing the final division.
 
-	// Get the current Vcc value
-	uint32_t Vcc = readVcc();
-	return ((uint32_t)_VpinVal * _maxV*125)/128;
+	return (((int32_t)_VpinVal + _calV) * (int32_t)_Vcc * (((int32_t)_r1 + _r2)/100)) / ((int32_t)1023 * _r2/100);
 }
 
 /**

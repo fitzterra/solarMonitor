@@ -36,11 +36,10 @@ void setup()
 // Main program.
 void loop()
 {
-	return;
     // Create the tasks.
-    PSensor PVSens(PV_PIN_V, PV_PIN_I, PV_MAX_V, PV_mVA, PV_R1, PV_R2, READ_RATE, PV_ID);
-    PSensor BATSens(BAT_PIN_V, BAT_PIN_I, BAT_MAX_V, BAT_mVA, BAT_R1, BAT_R2, READ_RATE, BAT_ID, -24);
-    PSensor LDSens(LD_PIN_V, LD_PIN_I, LD_MAX_V, LD_mVA, LD_R1, LD_R2, READ_RATE, LD_ID);
+    PSensor PVSens(PV_PIN_V, PV_PIN_I, PV_mVA, PV_R1, PV_R2, READ_RATE, PV_ID);
+    PSensor BATSens(BAT_PIN_V, BAT_PIN_I, BAT_mVA, BAT_R1, BAT_R2, READ_RATE, BAT_ID);
+    PSensor LDSens(LD_PIN_V, LD_PIN_I, LD_mVA, LD_R1, LD_R2, READ_RATE, LD_ID);
 
 	PSensor *sensors[] = { &PVSens, &BATSens, &LDSens }; 
     Logger logger(sensors, ARRAY_SIZE(sensors), READ_RATE);

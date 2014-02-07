@@ -85,7 +85,7 @@ void OpenSerial(long speed) {
  * 
  * Vcc = 1126400L / ADC
  */
-int readVcc() {
+uint16_t readVcc() {
 	// Read 1.1V reference against AVcc
 	// set the reference to Vcc and the measurement to the internal 1.1V reference
 	#if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -105,11 +105,11 @@ int readVcc() {
 	uint8_t low  = ADCL; // must read ADCL first - it then locks ADCH 
 	uint8_t high = ADCH; // unlocks both
 
-	long result = (high<<8) | low;
+	uint32_t result = (high<<8) | low;
 
 	//result = 1126400L / result; // Calculate Vcc (in mV); 1125300 = 1.1*1024*1000
 	// Others use 1023 instead of 1024 as the ADC resolution calculator. Since the
 	// max value for an analog input can be 1023, it makes more sense to use 1023
 	result = 1125300L / result; // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
-	return (int)result; // Vcc in millivolts
+	return (uint16_t)result; // Vcc in millivolts
 }

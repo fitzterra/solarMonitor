@@ -1,0 +1,8 @@
+# ignore objects and archives, anywhere in the tree.
+*.[oa]
+
+# ignore firmware files
+*.hex
+
+# ignore the makefile dependency dir
+.dep/

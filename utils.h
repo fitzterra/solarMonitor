@@ -21,6 +21,6 @@
 
 void OpenSerial(long speed = SERIAL_SPEED);
 
-long readVcc();
+uint16_t readVcc();
 
 #endif // _UTILS_H_

@@ -52,7 +52,6 @@ void Logger::updateLCD() {
 
 	// If the view count for this sensor has been reached, we update to the next
 	viewCount++;
-	Serial << "viewCount: " << viewCount << endl;
 	if (viewCount > 3) {
 		_showSensor++;
 		if(_showSensor >= _sensors) {
@@ -60,7 +59,6 @@ void Logger::updateLCD() {
 		}
 		viewCount = 0;
 	}
-	Serial << "_showSensor: " << _showSensor << endl;
 	// Get the sensor values
 	res = _sensor[_showSensor]->lastReading(&_data);
 	// Update the display
