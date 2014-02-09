@@ -49,6 +49,11 @@
 
 // ############# Logger settings ###########
 #define LOG_LCD			// Define this if a PCD8544 based LCD is connected for logging
+#define LOG_VWIRE		// Define this if a VirtualWire RF module is connected logging
+#define VWIRE_TX  2		// VirtualWire TX pin to use. Must be defined and free even if no TX.
+#define VWIRE_RX  3		// VirtualWire RX pin to use. Must be defined and free even if no RX.
+#define VWIRE_PTT 4		// VirtualWire PTT pin to use. Must be defined and free even if no PTT.
+#define VWIRE_SPEED 2000	// VirtualWire RF speed in bits/sec - Should not go higher than 2000
 
 // Some things to change for ATTiny85 target
 #if TARGET==TINY85

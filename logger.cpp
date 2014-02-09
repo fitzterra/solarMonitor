@@ -19,6 +19,14 @@ _logRate(logRate) {
 	_showSensor = 0;
 	_lcd.print(F("Solar Monitor"));
 	#endif
+	#ifdef LOG_VWIRE
+	// Set up the VirtualWire pins
+	vw_set_tx_pin(VWIRE_TX);
+	vw_set_rx_pin(VWIRE_RX);
+	vw_set_ptt_pin(VWIRE_PTT);
+    // Initialise the IO and ISR
+    vw_setup(VWIRE_SPEED);
+	#endif
 }
 
 /**
@@ -38,6 +46,9 @@ void Logger::run(uint32_t now) {
 	#endif
 	#ifdef LOG_LCD
 	updateLCD();
+	#endif
+	#ifdef LOG_VWIRE
+	logRF();
 	#endif
 
     // Run again in the required number of milliseconds.
@@ -75,4 +86,31 @@ void Logger::updateLCD() {
 	_lcd.print(_data.mW);
 	_lcd.print(" mW");
 }
-#endif
+#endif	// LOG_LCD
+
+#ifdef LOG_VWIRE
+void Logger::logRF() {
+	uint8_t res;
+	String logLine = String(millis());
+
+	// Read each sensor and add to the string
+	for (int i=0; i<_sensors; i++) {
+		res = _sensor[i]->lastReading(&_data);
+		logLine += ':';
+		logLine += _data.id;
+		logLine += ':';
+		logLine += _data.mV;
+		logLine += ':';
+		logLine += _data.mA;
+	}
+	// We need a trailing newline for the receiver to signal end of line
+	logLine += '\n';
+	#ifdef DEBUG
+	Serial << "RF out: " << logLine;
+	#endif
+	// Send if
+	vw_send((uint8_t*)&(logLine[0]), logLine.length());
+	// Wait for the transmission to be completed.
+	vw_wait_tx();
+}
+#endif // LOG_VWIRE

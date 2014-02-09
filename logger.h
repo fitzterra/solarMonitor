@@ -12,6 +12,7 @@
 #include "sensor.h"
 #include <SPI.h>
 #include "PCD8544_SPI.h"
+#include <VirtualWire.h>
 
 // Data logger class
 class Logger : public TimedTask {
@@ -31,6 +32,10 @@ class Logger : public TimedTask {
 
 		#ifdef LOG_LCD
 		void updateLCD();
+		#endif
+
+		#ifdef LOG_VWIRE
+		void logRF();
 		#endif
 };
 
